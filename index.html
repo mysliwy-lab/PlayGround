@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101210">
+  <link rel="icon" href="data:,">
+  <title>Below the Bell — Dungeon Delver</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Below the Bell home">
+        <span class="brand-mark" aria-hidden="true">⌁</span>
+        <span>UNDERKEEP<span class="brand-sub">THE BELL BELOW</span></span>
+      </a>
+      <div class="chapter"><span class="live-dot"></span> THE OLD MINE <span class="chapter-slash">/</span> FLOOR <b id="floor-label">01</b></div>
+      <button class="sound-button" id="sound-toggle" type="button" aria-label="Toggle sound">♫ <span>SOUND ON</span></button>
+    </header>
+
+    <section class="game-layout" aria-label="Dungeon crawler game">
+      <div class="game-column">
+        <div class="game-frame">
+          <canvas id="game" width="960" height="600" aria-label="Dungeon game world"></canvas>
+          <div class="canvas-topline"><span><i></i> LIVE DESCENT</span><span id="depth-label">DEPTH 01 · 300M</span></div>
+          <div class="toast" id="toast" aria-live="polite"></div>
+          <div class="start-hint" id="start-hint"><span class="keycap">WASD</span> TO MOVE <span class="hint-divider">·</span> <span class="keycap">SPACE</span> TO SWING</div>
+          <div class="mobile-controls" aria-label="Touch controls">
+            <div class="dpad">
+              <button data-dir="up" aria-label="Move up">▲</button>
+              <button data-dir="left" aria-label="Move left">◀</button>
+              <button data-dir="down" aria-label="Move down">▼</button>
+              <button data-dir="right" aria-label="Move right">▶</button>
+            </div>
+            <div class="touch-actions">
+              <button class="mine-touch" id="touch-mine" aria-label="Mine nearby ore">⛏</button>
+              <button class="attack-touch" id="touch-attack" aria-label="Swing sword">⚔</button>
+            </div>
+          </div>
+          <div class="game-over" id="game-over" hidden>
+            <div class="skull">✦</div><p class="eyebrow">THE MINE CLAIMS ANOTHER</p>
+            <h2>Lost in the dark.</h2><p>Your haul is still down there.</p>
+            <button id="retry-button" class="primary-button">DESCEND AGAIN <span>↗</span></button>
+          </div>
+          <div class="victory" id="victory" hidden>
+            <div class="skull">✧</div><p class="eyebrow">THE BELL HAS FALLEN SILENT</p>
+            <h2>Riches reclaimed.</h2><p id="victory-copy">The old mine is yours.</p>
+            <button id="next-floor-button" class="primary-button">DESCEND DEEPER <span>↘</span></button>
+          </div>
+        </div>
+        <div class="bottom-meta"><span><span class="meta-icon">◈</span> FIND THE LIFT TO GO DEEPER</span><span>NO WAY OUT BUT DOWN</span></div>
+      </div>
+
+      <aside class="side-panel">
+        <div class="panel-block adventurer">
+          <div class="panel-heading"><span>DELVER</span><span class="tiny-tag">LV. 01</span></div>
+          <div class="avatar-row">
+            <div class="avatar" aria-hidden="true"><span class="avatar-helmet"></span><span class="avatar-face"></span><span class="avatar-sword">╱</span></div>
+            <div><h1>Rook<br>Underhill</h1><p>RATCATCHER · HUMAN</p></div>
+          </div>
+          <div class="health-line"><span>VITALITY</span><span id="health-value">5 / 5</span></div>
+          <div class="hearts" id="hearts" aria-label="5 of 5 health"><span>♥</span><span>♥</span><span>♥</span><span>♥</span><span>♥</span></div>
+          <div class="xp-track"><span id="xp-fill"></span></div>
+          <div class="xp-label"><span>DELVER'S LUCK</span><span id="xp-value">0 / 5</span></div>
+        </div>
+
+        <div class="panel-block haul-block">
+          <div class="panel-heading"><span>YOUR HAUL</span><span class="coin-glyph">●</span></div>
+          <div class="coin-count"><span id="coin-count">0</span><span class="coin-name">GILT COINS</span></div>
+          <div class="haul-foot"><span>ORE CHUNKS</span><b id="ore-count">0</b></div>
+        </div>
+
+        <div class="panel-block objective-block">
+          <div class="panel-heading"><span>FIELD NOTES</span><span class="note-mark">✳</span></div>
+          <div class="objective"><span class="objective-check" id="spider-check">○</span><div><b>Thin the nest</b><small><span id="spider-count">0</span> / 3 spiders</small></div></div>
+          <div class="objective"><span class="objective-check" id="ore-check">○</span><div><b>Crack the seam</b><small><span id="ore-objective">0</span> / 2 ore veins</small></div></div>
+          <div class="objective"><span class="objective-check" id="lift-check">○</span><div><b>Find the lift</b><small>Descend to the next floor</small></div></div>
+        </div>
+
+        <div class="panel-block controls-block">
+          <div class="panel-heading"><span>HOW TO SURVIVE</span><span class="controls-mark">⌘</span></div>
+          <div class="control-row"><span class="key-group"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>Move around</span></div>
+          <div class="control-row"><span class="key-group"><kbd>SPACE</kbd></span><span>Swing your sword</span></div>
+          <div class="control-row"><span class="key-group"><kbd>F</kbd></span><span>Mine a nearby vein</span></div>
+          <p class="tip">Spiders hate the light. Keep your blade ready.</p>
+        </div>
+        <div class="panel-footer"><span>EST. 1887</span><span>✦</span><span>STAY SHARP, DELVER</span></div>
+      </aside>
+    </section>
+    <footer class="site-footer"><span>© THE BELL BELOW MINING CO.</span><span>“THEY SAY IT'S ONLY A STORY.”</span><span>v1.0.4 <b>●</b></span></footer>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>
