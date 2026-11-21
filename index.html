@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Perfect Circle</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0}body{overflow:hidden;background:#080a12;color:#fff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif}canvas{display:block;width:100%;height:100%;touch-action:none}
+#ui{position:fixed;inset:0;pointer-events:none}#top{position:absolute;top:max(18px,env(safe-area-inset-top));left:22px;right:22px;display:flex;justify-content:space-between}.brand{font-size:12px;font-weight:950;letter-spacing:.24em;text-transform:uppercase}.brand b{color:#ffcf52}.stats{display:flex;gap:8px}.pill{height:36px;padding:0 12px;border:1px solid rgba(255,255,255,.09);border-radius:999px;background:rgba(12,14,25,.72);backdrop-filter:blur(12px);display:flex;align-items:center;gap:7px;font-size:11px;font-weight:900}.dot{width:7px;height:7px;border-radius:50%;background:#59e6bd;box-shadow:0 0 12px #59e6bd}
+#hud{position:absolute;left:50%;top:14%;transform:translateX(-50%);text-align:center}.eyebrow{font-size:10px;font-weight:900;letter-spacing:.28em;text-transform:uppercase;color:#a7aabd}.progress{margin-top:8px;width:220px;height:5px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}.progress i{display:block;width:0;height:100%;background:linear-gradient(90deg,#ffcf52,#ff7f75,#ffcf52);border-radius:99px;box-shadow:0 0 12px #ffcf52}
+#hint{position:absolute;left:50%;bottom:38px;transform:translateX(-50%);text-align:center;width:max-content;max-width:calc(100%-30px);font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#dfe1eb}.mouse{display:inline-block;margin-right:9px;width:20px;height:26px;border:2px solid rgba(255,255,255,.55);border-radius:10px;vertical-align:-8px}.mouse:after{content:'';display:block;width:2px;height:5px;margin:5px auto;background:#ffcf52;border-radius:2px}
+#card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.92);width:min(380px,calc(100% - 36px));padding:28px;border:1px solid rgba(255,255,255,.11);border-radius:24px;background:rgba(13,15,27,.94);backdrop-filter:blur(18px);text-align:center;pointer-events:auto;opacity:0;visibility:hidden;transition:.35s}#card.open{opacity:1;visibility:visible;transform:translate(-50%,-50%) scale(1)}#card .grade{color:#ffcf52;font-size:11px;font-weight:950;letter-spacing:.3em;text-transform:uppercase}#card h1{margin:4px 0 2px;font-size:54px;letter-spacing:-.06em}#card p{color:#aeb1bf;font-size:14px;margin:12px 0 20px}.btn{border:0;border-radius:999px;height:48px;padding:0 22px;background:#ffcf52;color:#171820;font-weight:950;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}.btn:active{transform:scale(.97)}
+@media(max-width:600px){#top{left:14px;right:14px}.stats{gap:5px}.pill{height:32px;padding:0 8px}.brand{font-size:10px}.stats .pill:first-child{display:none}#hud{top:12%}#hint{bottom:max(22px,env(safe-area-inset-bottom))}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+<div id="top"><div class="brand">Perfect <b>Circle</b></div><div class="stats"><div class="pill">SCORE <span id="score">000</span></div><div class="pill"><i class="dot"></i><span id="round">ROUND 01</span></div></div></div>
+<div id="hud"><div class="eyebrow">Circle accuracy</div><div class="progress"><i id="bar"></i></div></div>
+<div id="hint"><span class="mouse"></span><span id="hintText">Hold & trace the glowing circle</span></div>
+<div id="card"><div class="grade" id="grade">NEARLY PERFECT</div><h1 id="scoreBig">94%</h1><p id="detail">Excellent control. Just one tiny wobble.</p><button class="btn" id="again">Try again</button></div>
+</div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
+
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.setClearColor(0x080a12);
+const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x080a12,.028);
+const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.1,100);camera.position.set(0,0,14);
+
+// soft 3D stage
+scene.add(new THREE.AmbientLight(0xffffff,.7));const key=new THREE.PointLight(0xffcf52,25,30);key.position.set(-4,5,8);scene.add(key);
+const ring=new THREE.Group();scene.add(ring);
+const mat=new THREE.MeshStandardMaterial({color:0x202537,metalness:.35,roughness:.35,emissive:0x101421,emissiveIntensity:.8});
+const glowMat=new THREE.MeshBasicMaterial({color:0xffcf52,transparent:true,opacity:.95});
+const ringRadius=3.15;
+for(let i=0;i<96;i++){const a=i/96*Math.PI*2;const g=new THREE.SphereGeometry(.035,8,6);const m=new THREE.Mesh(g,mat);m.position.set(Math.cos(a)*ringRadius,Math.sin(a)*ringRadius,0);ring.add(m)}
+// trace line
+const trace=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0x67e8b7,transparent:true,opacity:.95,linewidth:3}));trace.renderOrder=5;scene.add(trace);
+// cursor orb
+const orb=new THREE.Mesh(new THREE.SphereGeometry(.13,20,16),new THREE.MeshBasicMaterial({color:0xffffff}));orb.visible=false;scene.add(orb);
+
+const points=[],coverage=new Array(72).fill(0);let drawing=false,started=false,scoreAccum=0,totalAcc=0,round=1;
+function setHint(s){document.getElementById('hintText').textContent=s}
+function pToWorld(e){const r=canvas.getBoundingClientRect();const x=((e.clientX-r.left)/r.width)*2-1,y=-((e.clientY-r.top)/r.height)*2+1;const v=new THREE.Vector3(x,y,.5).unproject(camera);const dir=v.sub(camera.position).normalize();const dist=-camera.position.z/dir.z;return camera.position.clone().add(dir.multiplyScalar(dist))}
+function begin(e){if(document.getElementById('card').classList.contains('open'))return;drawing=true;started=true;points.length=0;scoreAccum=0;totalAcc=0;coverage.fill(0);trace.geometry.dispose();trace.geometry=new THREE.BufferGeometry();setHint('Keep the line close to the ring');orb.visible=true;add(e)}
+function add(e){if(!drawing)return;const p=pToWorld(e);p.z=.05;points.push(p.clone());if(points.length>1800)points.shift();trace.geometry.setFromPoints(points);orb.position.copy(p);
+ // accuracy and coverage
+ const ang=(Math.atan2(p.y,p.x)+Math.PI*2)%(Math.PI*2);const bin=Math.floor(ang/(Math.PI*2)*coverage.length)%coverage.length;const r=Math.sqrt(p.x*p.x+p.y*p.y);const err=Math.abs(r-ringRadius);const acc=Math.max(0,1-err/1.25);coverage[bin]=Math.max(coverage[bin],acc);totalAcc+=acc;scoreAccum++;const avg=totalAcc/scoreAccum;document.getElementById('bar').style.width=(Math.min(100,scoreAccum/4))+'%';
+ // close & finish
+ if(points.length>120){const first=points[0],d=first.distanceTo(p);const angSpan=Math.abs((coverage.filter(v=>v>.5).length/coverage.length));if(d<.32&&angSpan>.78)finish()}
+}
+function end(e){if(!drawing)return;drawing=false;orb.visible=false;if(started&&points.length>100)finish()}
+function finish(){if(!drawing&&!started)return;drawing=false;orb.visible=false;
+ let avg=coverage.reduce((a,b)=>a+b,0)/coverage.length;let cov=coverage.filter(v=>v>.5).length/coverage.length;let value=Math.round(Math.max(0,Math.min(99,avg*76+cov*24)));
+ let grade=value>92?'CIRCLE MASTER':value>78?'NEARLY PERFECT':value>60?'GOOD CONTROL':'KEEP PRACTICING';let detail=value>92?'Exceptional. You found the perfect orbit.':value>78?'Excellent control. Just a few tiny wobbles.':value>60?'Solid attempt. Focus on an even pace.':'A smoother, slower lap will help.';
+ document.getElementById('grade').textContent=grade;document.getElementById('scoreBig').textContent=value+'%';document.getElementById('detail').textContent=detail;document.getElementById('score').textContent=String(value).padStart(3,'0');document.getElementById('card').classList.add('open');started=false}
+canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);begin(e)});canvas.addEventListener('pointermove',add);canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
+window.addEventListener('keydown',e=>{if(e.key===' '&&!drawing&&started===false)begin({clientX:innerWidth/2,clientY:innerHeight/2})});
+document.getElementById('again').addEventListener('click',()=>{document.getElementById('card').classList.remove('open');points.length=0;trace.geometry.setFromPoints([]);coverage.fill(0);document.getElementById('bar').style.width='0';round++;document.getElementById('round').textContent='ROUND '+String(round).padStart(2,'0');setHint('Hold & trace the glowing circle')});
+
+// particles
+const particleGeometry=new THREE.BufferGeometry();const par=[];for(let i=0;i<250;i++)par.push((Math.random()-.5)*22,(Math.random()-.5)*14,(Math.random()-.5)*10);particleGeometry.setAttribute('position',new THREE.Float32BufferAttribute(par,3));const particles=new THREE.Points(particleGeometry,new THREE.PointsMaterial({color:0x7782a8,size:.018,transparent:true,opacity:.38}));scene.add(particles);
+function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}addEventListener('resize',resize);
+const clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);const t=clock.getElapsedTime();ring.rotation.z=Math.sin(t*.18)*.025;particles.rotation.z=t*.012;orb.visible&&orb.scale.setScalar(.9+Math.sin(t*8)*.12);renderer.render(scene,camera)}animate();
+</script>
+</body>
+</html>
