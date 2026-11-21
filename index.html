@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Neon Striker</title>
+  <style>
+    * { box-sizing: border-box; }
+    :html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #05070a; }
+    body { font-family: Impact, 'Arial Black', sans-serif; color: white; touch-action: none; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+    #hud { position: fixed; inset: 0; pointer-events: none; text-shadow: 0 2px 8px #000; }
+    #top { position: absolute; left: 24px; right: 24px; top: 18px; display:flex; justify-content:space-between; align-items:flex-start; }
+    .label { color:#9ac4cf; font-family:Arial,sans-serif; font-size:11px; letter-spacing:3px; }
+    .value { font-size:29px; line-height:1; margin-top:5px; }
+    #wave { text-align:center; }
+    #health { position:absolute; left:24px; bottom:25px; }
+    #healthBar { width:220px;height:9px;background:#172027;margin-top:8px;transform:skewX(-20deg);overflow:hidden;border:1px solid #55636a; }
+    #healthFill { width:100%;height:100%;background:#f1f5e7;box-shadow:0 0 12px #fff; }
+    #ammo { position:absolute; right:24px; bottom:19px; text-align:right; }
+    #ammoVal { font-size:45px;line-height:.8; }
+    #crosshair { position:absolute; left:50%;top:50%; width:18px;height:18px; transform:translate(-50%,-50%); }
+    #crosshair:before,#crosshair:after { content:'';position:absolute;background:#d8ffef;box-shadow:0 0 5px #72ffc9; }
+    #crosshair:before { width:18px;height:2px;left:0;top:8px; }
+    #crosshair:after { width:2px;height:18px;left:8px;top:0; }
+    #start,#dead { position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(5,8,12,.86),rgba(10,18,23,.76));text-align:center;z-index:10; }
+    #start h1 { font-size:clamp(52px,10vw,110px); line-height:.78; margin:0 0 24px; letter-spacing:-5px; color:#edf9f4; }
+    #start h1 span { color:#ff5a43; }
+    #start p { max-width:500px;font-family:Arial,sans-serif;font-size:14px;color:#b7c8cc;letter-spacing:1px;line-height:1.8; }
+    button { pointer-events:auto;border:1px solid #c8ddd8;background:#edf7f2;color:#111;padding:15px 38px;font:700 14px Arial,sans-serif;letter-spacing:3px;cursor:pointer;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+    #dead { display:none;background:rgba(5,7,9,.72); }
+    #dead h2 {font-size:70px;margin:0 0 10px;letter-spacing:-3px} 
+    #hurt {position:absolute;inset:0;opacity:0;background:radial-gradient(circle,transparent 45%,rgba(255,42,42,.75));transition:opacity .08s}
+    #damage {position:absolute;left:50%;top:58%;transform:translate(-50%,-50%);font-size:24px;color:#ff765e;opacity:0;transition:.25s}
+    #touchMove,#touchFire { display:none;position:fixed;z-index:5;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);pointer-events:auto; }
+    #touchMove { width:110px;height:110px;left:20px;bottom:36px; }
+    #touchFire { width:76px;height:76px;right:24px;bottom:54px;border-color:rgba(255,90,67,.5); }
+    @media (pointer: coarse) { #touchMove,#touchFire{display:block} #health{bottom:135px} #ammo{bottom:130px} }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="hud">
+    <div id="hurt"></div><div id="damage">-10</div>
+    <div id="top"><div><div class="label">SCORE</div><div class="value" id="score">000000</div></div><div id="wave"><div class="label">WAVE</div><div class="value" id="waveVal">01</div></div><div><div class="label">HOSTILES</div><div class="value" id="kills">00</div></div></div>
+    <div id="crosshair"></div>
+    <div id="health"><div class="label">VITALITY</div><div id="healthBar"><div id="healthFill"></div></div></div>
+    <div id="ammo"><div class="label">RAPTOR .45</div><div id="ammoVal">12</div></div>
+  </div>
+  <div id="start"><h1>NEON<br><span>STRIKER</span></h1><p>WASD — MOVE &nbsp;&nbsp; MOUSE — AIM &nbsp;&nbsp; CLICK — FIRE<br>R — RELOAD &nbsp;&nbsp; SHIFT — SPRINT</p><button id="startBtn">ENTER ARENA</button></div>
+  <div id="dead"><h2>DOWN</h2><p id="final">SCORE 000000</p><button id="again">REDEPLOY</button></div>
+  <div id="touchMove"></div><div id="touchFire"></div>
+<script>
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+let W,H,DPR=1,keys={},mouse={x:0,y:0,down:false},game=false,dead=false;
+let player={x:0,y:0,a:0,hp:100,ammo:12,reload:0,inv:0,sprint:0};
+let enemies=[],bullets=[],particles=[],pickups=[],score=0,wave=1,spawned=0,kills=0,waveTimer=0;
+const walls=[[-8,-8,16,.8],[ -8,7.2,16,.8],[-8,-8,.8,16],[7.2,-8,.8,16],[-5,-4,3,.5],[-5,-4,.5,3],[2,-5,4,.5],[5.5,-5,.5,3],[-4,2,.5,3],[2,2,4,.5],[2,4.5,3,.5]];
+function resize(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=W*DPR;canvas.height=H*DPR;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0)} addEventListener('resize',resize);resize();
+function collides(x,y,r=.28){if(x<-7||x>7||y<-7||y>7)return true;for(const w of walls){if(x+r>w[0]&&x-r<w[0]+w[2]&&y+r>w[1]&&y-r<w[1]+w[3])return true}return false}
+function start(){game=true;dead=false;score=0;kills=0;wave=1;spawned=0;player={x:0,y:5.8,a:Math.PI,hp:100,ammo:12,reload:0,inv:0,sprint:0};enemies=[];bullets=[];particles=[];pickups=[];document.getElementById('start').style.display='none';document.getElementById('dead').style.display='none';canvas.requestPointerLock?.();spawnWave()}
+function spawnWave(){spawned=4+wave*2;for(let i=0;i<spawned;i++)setTimeout(()=>{if(game&&enemies.length<spawned)addEnemy()},i*350)}
+function addEnemy(){let a=Math.random()*Math.PI*2,r=5.5+Math.random()*1.2;enemies.push({x:Math.cos(a)*r,y:Math.sin(a)*r,hp:2+Math.floor(wave/3),type:Math.random()<.18?'brute':'normal',cool:1+Math.random(),hit:0})}
+function shoot(){if(!game||dead||player.reload)return;if(player.ammo<=0){reload();return}player.ammo--;bullets.push({x:player.x,y:player.y,a:player.a,life:.8});let hit=false;for(let i=enemies.length-1;i>=0;i--){let e=enemies[i],dx=e.x-player.x,dy=e.y-player.y,d=Math.sqrt(dx*dx+dy*dy);let ang=Math.atan2(dy,dx)-player.a;while(ang>Math.PI)ang-=Math.PI*2;while(ang<-Math.PI)ang+=Math.PI*2;if(d<5&&Math.abs(ang)<.12/d+.035){hit=true;e.hp--;e.hit=.12;particles.push({x:e.x,y:e.y,z:.5,vx:Math.cos(player.a)*.04,vy:Math.sin(player.a)*.04,life:.3,c:'#ffdd70'});if(e.hp<=0){enemies.splice(i,1);score+=e.type==='brute'?250:100;kills++;if(Math.random()<.13)pickups.push({x:e.x,y:e.y,t:0})}break}}
+ if(!hit){} }
+function reload(){if(player.reload||player.ammo===12)return;player.reload=1.2}
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='r')reload();if(e.key==='Escape')document.exitPointerLock?.()});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+canvas.addEventListener('click',()=>{if(game&&!dead){canvas.requestPointerLock?.();mouse.down=true}});addEventListener('mouseup',()=>mouse.down=false);addEventListener('mousemove',e=>{if(document.pointerLockElement===canvas&&game)player.a+=e.movementX*.0022});
+let last=performance.now(),fireRate=0;
+function update(t){let dt=Math.min(.033,(t-last)/1000);last=t;if(!game||dead)return;fireRate-=dt;if(mouse.down&&fireRate<=0){shoot();fireRate=.11}
+ let speed=(keys.shift?3.8:2.5)*(player.sprint?1.25:1),dx=0,dy=0;if(keys.w)dy+=1;if(keys.s)dy-=1;if(keys.a)dx-=1;if(keys.d)dx+=1;let len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;let nx=player.x+( -Math.sin(player.a)*dx + Math.cos(player.a)*dy)*speed*dt;let ny=player.y+( Math.cos(player.a)*dx + Math.sin(player.a)*dy)*speed*dt;if(!collides(nx,player.y))player.x=nx;if(!collides(player.x,ny))player.y=ny;player.inv-=dt;if(player.reload>0){player.reload-=dt;if(player.reload<=0)player.ammo=12}
+ for(let i=bullets.length-1;i>=0;i--){let b=bullets[i];b.x+=Math.cos(b.a)*dt*18;b.y+=Math.sin(b.a)*dt*18;b.life-=dt;if(b.life<=0)bullets.splice(i,1)}
+ for(let i=enemies.length-1;i>=0;i--){let e=enemies[i];e.cool-=dt;e.hit-=dt;let dx=player.x-e.x,dy=player.y-e.y,d=Math.max(.1,Math.hypot(dx,dy));if(d>0.55){let sp=(e.type==='brute'?1:1.35)*(.9+wave*.04),nx=e.x+dx/d*sp*dt,ny=e.y+dy/d*sp*dt;if(!collides(nx,e.y))e.x=nx;if(!collides(e.x,ny))e.y=ny}else if(e.cool<=0&&player.inv<=0){player.hp-=e.type==='brute'?16:10;player.inv=.7;e.cool=1;hurt();if(player.hp<=0){player.hp=0;end()}}
+ }
+ for(let i=particles.length-1;i>=0;i--){let p=particles[i];p.life-=dt;p.x+=p.vx;p.y+=p.vy;if(p.life<=0)particles.splice(i,1)}
+ for(let i=pickups.length-1;i>=0;i--){let p=pickups[i];p.t+=dt;if(Math.hypot(p.x-player.x,p.y-player.y)<.6){player.hp=Math.min(100,player.hp+25);pickups.splice(i,1)}}
+ if(enemies.length===0&&kills>=spawned){wave++;kills=0;spawned=0;score+=500;spawnWave();}
+ document.getElementById('score').textContent=String(score).padStart(6,'0');document.getElementById('waveVal').textContent=String(wave).padStart(2,'0');document.getElementById('kills').textContent=String(enemies.length).padStart(2,'0');document.getElementById('ammoVal').textContent=player.reload>0?'--':player.ammo;document.getElementById('healthFill').style.width=player.hp+'%'}
+function hurt(){let h=document.getElementById('hurt'),d=document.getElementById('damage');h.style.opacity=.75;d.style.opacity=1;d.textContent='-'+(player.hp<=0?'DOWN':'10');setTimeout(()=>{h.style.opacity=0;d.style.opacity=0},100)}
+function end(){dead=true;game=false;document.exitPointerLock?.();document.getElementById('final').textContent='SCORE '+String(score).padStart(6,'0');document.getElementById('dead').style.display='flex'}
+function project(x,y,z=0){let dx=x-player.x,dy=y-player.y,c=Math.cos(player.a),s=Math.sin(player.a);let rx=c*dx+s*dy,ry=-s*dx+c*dy;if(rx<=.05)return null;let f=W*.78;return{x:W/2+(ry/rx)*f,y:H*.52-(z/rx)*f,w:f/rx,h:H*.2/rx,d:rx}}
+function render(){ctx.fillStyle='#081014';ctx.fillRect(0,0,W,H);let horizon=H*.52;let sky=ctx.createLinearGradient(0,0,0,horizon);sky.addColorStop(0,'#10191d');sky.addColorStop(1,'#2a3434');ctx.fillStyle=sky;ctx.fillRect(0,0,W,horizon);ctx.fillStyle='#101619';ctx.fillRect(0,horizon,W,H-horizon);
+ // floor grid
+ ctx.strokeStyle='rgba(104,145,145,.18)';ctx.lineWidth=1;for(let i=0;i<16;i++){let z=i/16;let y=horizon+(H-horizon)*z*z;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}for(let i=-10;i<=10;i++){let p=project(i,7);let q=project(i,-7);if(p&&q){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke()}}
+ // horizon wall columns
+ let objs=[];for(const w of walls)for(let yy=w[1];yy<w[1]+w[3];yy+=.5)for(let xx=w[0];xx<w[0]+w[2];xx+=.5){let p=project(xx+.25,yy+.25,.55);if(p)objs.push({d:p.d,type:'wall',p,x:xx,y:yy})}for(const e of enemies){let p=project(e.x,e.y,.5);if(p)objs.push({d:p.d,type:'enemy',p,e})}for(const p0 of pickups){let p=project(p0.x,p0.y,.28);if(p)objs.push({d:p.d,type:'pickup',p,p:p0})}objs.sort((a,b)=>b.d-a.d);
+ for(const o of objs){if(o.type==='wall'){let p=o.p,s=Math.max(2,p.w*.52);ctx.fillStyle='#26343a';ctx.fillRect(p.x-s/2,p.y-s*.9,s,s*.95);ctx.strokeStyle='#6a8586';ctx.lineWidth=Math.max(1,s*.03);ctx.strokeRect(p.x-s/2,p.y-s*.9,s,s*.95);ctx.fillStyle='#11191d';ctx.fillRect(p.x-s*.35,p.y-s*.55,s*.7,s*.08)}else if(o.type==='enemy'){let p=o.p,e=o.e,s=Math.max(8,p.w*.28);ctx.fillStyle=e.hit>0?'#fff':e.type==='brute'?'#a73c31':'#d95541';ctx.beginPath();ctx.moveTo(p.x,p.y-s*.9);ctx.lineTo(p.x-s*.42,p.y+s*.55);ctx.lineTo(p.x+s*.42,p.y+s*.55);ctx.closePath();ctx.fill();ctx.fillStyle='#ffb38a';ctx.beginPath();ctx.arc(p.x,p.y-s*.65,s*.18,0,7);ctx.fill();ctx.fillStyle='#24100d';ctx.fillRect(p.x-s*.11,p.y-s*.72,s*.22,s*.05)}else{let p=o.p,s=Math.max(8,p.w*.12);ctx.fillStyle='#78ffd1';ctx.fillRect(p.x-s,p.y-s,s*2,s*2);ctx.fillStyle='#dffff2';ctx.fillRect(p.x-s*.45,p.y-s*.45,s*.9,s*.9)}}
+ // weapon
+ ctx.save();ctx.translate(W*.71,H*.82);ctx.rotate(-.05);ctx.fillStyle='#171f21';ctx.beginPath();ctx.moveTo(-55,70);ctx.lineTo(-35,-20);ctx.lineTo(55,-48);ctx.lineTo(95,30);ctx.lineTo(75,90);ctx.closePath();ctx.fill();ctx.fillStyle='#536267';ctx.fillRect(-20,-10,130,30);ctx.fillStyle='#9cb0ae';ctx.fillRect(20,-20,95,12);ctx.fillStyle='#ff6047';ctx.fillRect(75,-17,28,4);ctx.restore();
+ requestAnimationFrame(loop)}
+function loop(t){update(t);render()}document.getElementById('startBtn').onclick=start;document.getElementById('again').onclick=start;
+requestAnimationFrame(loop);
+// touch movement and aim
+let move={x:0,y:0},joy=false;const tm=document.getElementById('touchMove'),tf=document.getElementById('touchFire');tm.addEventListener('pointerdown',e=>{joy=true;tm.setPointerCapture(e.pointerId)});tm.addEventListener('pointermove',e=>{if(!joy)return;let r=tm.getBoundingRect?tm.getBoundingRect():tm.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;move.x=(e.clientX-cx)/55;move.y=(e.clientY-cy)/55;keys.w=move.y<-.25;keys.s=move.y>.25;keys.a=move.x<-.25;keys.d=move.x>.25});tm.addEventListener('pointerup',()=>{joy=false;keys.w=keys.s=keys.a=keys.d=false});tf.addEventListener('pointerdown',()=>mouse.down=true);tf.addEventListener('pointerup',()=>mouse.down=false);let lx=0,ly=0;canvas.addEventListener('touchstart',e=>{let t=e.changedTouches[0];lx=t.clientX;ly=t.clientY});canvas.addEventListener('touchmove',e=>{let t=e.changedTouches[0];if(t.clientX>W*.5)player.a+=(t.clientX-lx)*.006;lx=t.clientX;ly=t.clientY},{passive:true});
+</script>
+</body>
+</html>
