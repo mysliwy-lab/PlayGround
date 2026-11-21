@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rock · Paper · Scissors</title>
+<style>
+:root{--ink:#19324a;--cream:#fffaf0;--pink:#ffb3c1;--yellow:#ffd76a;--mint:#95d9c9;--blue:#93b9dc}
+*{box-sizing:border-box} body{margin:0;font-family:Arial Rounded MT Bold,"Trebuchet MS",sans-serif;color:var(--ink);background:var(--cream);min-height:100dvh;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;background-image:radial-gradient(#19324a 1px,transparent 1px);background-size:20px 20px}
+.shell{width:min(980px,calc(100% - 32px));margin:auto;min-height:100dvh;display:flex;flex-direction:column;padding:18px 0 24px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:900}.logo{width:44px;height:44px;border:3px solid var(--ink);border-radius:50%;background:var(--yellow);display:grid;place-items:center;font-size:23px;box-shadow:3px 3px 0 var(--ink)}
+.iconbtn{border:3px solid var(--ink);background:white;border-radius:14px;width:44px;height:44px;font-size:20px;cursor:pointer;box-shadow:2px 3px 0 var(--ink)}
+main{flex:1;display:grid;grid-template-rows:auto 1fr auto;gap:10px}
+.scoreboard{display:flex;justify-content:center;gap:12px}.score{width:150px;text-align:center;border:3px solid var(--ink);border-radius:18px;padding:7px 12px;background:white;box-shadow:4px 5px 0 var(--ink)}.score em{display:block;font-size:11px;letter-spacing:2px;font-style:normal;font-weight:900}.score strong{font-size:31px;line-height:1}.vs{align-self:center;font-size:13px;font-weight:900;transform:rotate(-8deg)}
+.arena{position:relative;display:grid;grid-template-columns:1fr 100px 1fr;align-items:center;min-height:330px}.fighter{text-align:center}.hand{width:240px;height:240px;max-width:90%;margin:auto;border:4px solid var(--ink);border-radius:50%;display:grid;place-items:center;font-size:120px;position:relative;box-shadow:8px 9px 0 var(--ink);transition:.18s ease}.fighter:first-child .hand{background:var(--pink)}.fighter:last-child .hand{background:var(--mint)}
+.hand:after{content:"";position:absolute;width:55%;height:10px;border-radius:50%;background:rgba(25,50,74,.12);bottom:-27px}.fighter label{display:inline-block;margin-top:24px;border:2.5px solid var(--ink);border-radius:999px;background:white;padding:5px 12px;font-size:12px;font-weight:900;letter-spacing:1.5px}
+.result{height:110px;text-align:center;align-self:center}.result strong{display:block;font-size:34px;line-height:1;margin:10px 0}.result span{display:inline-block;background:var(--yellow);border:2.5px solid var(--ink);border-radius:999px;padding:7px 13px;font-size:12px;font-weight:900}.burst{position:absolute;inset:0;pointer-events:none}.spark{position:absolute;font-size:22px;font-weight:900;animation:pop .55s forwards}@keyframes pop{to{transform:translate(var(--x),var(--y)) rotate(20deg);opacity:0}}
+.controls{text-align:center}.controls p{margin:0 0 9px;font-size:12px;font-weight:900;letter-spacing:2px}.choices{display:flex;justify-content:center;gap:14px}.choice{width:160px;height:86px;border:3px solid var(--ink);border-radius:22px;background:white;box-shadow:5px 6px 0 var(--ink);cursor:pointer;font:900 16px "Trebuchet MS",sans-serif;color:var(--ink);transition:.12s}.choice b{font-size:34px;margin-right:8px}.choice:nth-child(1){background:#ffc9d3}.choice:nth-child(2){background:#ffe58c}.choice:nth-child(3){background:#bde4d9}.choice:hover{transform:translateY(-3px);box-shadow:5px 9px 0 var(--ink)}.choice:active{transform:translate(3px,4px);box-shadow:2px 2px 0 var(--ink)}
+.modal{position:fixed;inset:0;background:rgba(25,50,74,.35);display:none;place-items:center}.modal.open{display:grid}.card{width:min(390px,calc(100% - 32px));background:white;border:4px solid var(--ink);border-radius:24px;padding:24px;box-shadow:8px 9px 0 var(--ink);text-align:center}.card h2{margin:0 0 12px}.card p{line-height:1.5}.card button{border:3px solid var(--ink);border-radius:14px;background:var(--yellow);font-weight:900;padding:11px 20px;box-shadow:3px 4px 0 var(--ink);cursor:pointer}
+@media(max-width:700px){.shell{width:min(100% - 20px,560px);padding-top:8px}.brand{font-size:16px}.logo{width:38px;height:38px;font-size:19px}.score{width:120px}.arena{grid-template-columns:1fr 62px 1fr;min-height:280px}.hand{width:min(160px,84vw/2);height:min(160px,84vw/2);font-size:72px;box-shadow:5px 6px 0 var(--ink)}.fighter label{margin-top:18px}.result strong{font-size:24px}.result span{font-size:10px}.choices{gap:7px}.choice{width:31%;height:72px;border-radius:16px;box-shadow:3px 4px 0 var(--ink);font-size:12px}.choice b{display:block;font-size:27px;margin:0}}
+@media(max-height:600px){.shell{padding:6px 0}.arena{min-height:220px}.hand{width:150px;height:150px;font-size:68px}.fighter label{margin-top:14px}.score{padding:4px}.score strong{font-size:24px}}
+</style></head>
+<body>
+<div class="shell">
+<header><div class="brand"><div class="logo">✊</div> Rock Paper Scissors</div><button class="iconbtn" id="reset" aria-label="Reset game">↻</button></header>
+<main>
+<section class="scoreboard"><div class="score"><em>YOU</em><strong id="you">0</strong></div><div class="vs">ROUND <b id="round">1</b></div><div class="score"><em>CPU</em><strong id="cpu">0</strong></div></section>
+<section class="arena"><div class="fighter"><div class="hand" id="playerHand">✊</div><label>YOU</label></div><div class="result"><span id="tag">MAKE YOUR MOVE</span><strong id="headline">Shoot!</strong></div><div class="fighter"><div class="hand" id="cpuHand">✊</div><label>CPU</label></div><div class="burst" id="burst"></div></section>
+<section class="controls"><p>CHOOSE YOUR WEAPON</p><div class="choices"><button class="choice" data-choice="rock"><b>✊</b> Rock</button><button class="choice" data-choice="paper"><b>✋</b> Paper</button><button class="choice" data-choice="scissors"><b>✌️</b> Scissors</button></div></section>
+</main></div>
+<div class="modal" id="modal"><div class="card"><h2 id="modalTitle">Game over</h2><p id="modalText"></p><button id="playAgain">Play again</button></div></div>
+<script>
+const icons={rock:'✊',paper:'✋',scissors:'✌️'}, wins={rock:'scissors',paper:'rock',scissors:'paper'};
+let you=0,cpu=0,round=1,locked=false;
+const $=id=>document.getElementById(id);
+function play(player){if(locked)return;locked=true;const cpuChoice=['rock','paper','scissors'][Math.floor(Math.random()*3)];$('playerHand').textContent='✊';$('cpuHand').textContent='✊';$('tag').textContent='SHOOT';$('headline').textContent='…';
+let n=0;const shake=setInterval(()=>{$('playerHand').textContent=['✊','✊','✊'][n%3];$('cpuHand').textContent=['✊','✊','✊'][n%3];n++},90);
+setTimeout(()=>{clearInterval(shake);$('playerHand').textContent=icons[player];$('cpuHand').textContent=icons[cpuChoice];let result;if(player===cpuChoice){result='draw';$('tag').textContent='SAME MOVE';$('headline').textContent="It's a draw!"}else if(wins[player]===cpuChoice){you++;result='win';$('tag').textContent='POINT YOU';$('headline').textContent='You win!';burst()}else{cpu++;result='lose';$('tag').textContent='POINT CPU';$('headline').textContent='CPU wins!';}
+$('you').textContent=you;$('cpu').textContent=cpu;if(you===5||cpu===5){setTimeout(gameOver,500)}else{round++;$('round').textContent=round;locked=false}},600)}
+function burst(){const b=$('burst');for(let i=0;i<12;i++){const s=document.createElement('i');s.className='spark';s.textContent=['★','●','✦'][i%3];s.style.left=(35+Math.random()*30)+'%';s.style.top=(35+Math.random()*25)+'%';s.style.setProperty('--x',(Math.random()*220-110)+'px');s.style.setProperty('--y',(Math.random()*180-90)+'px');b.appendChild(s);setTimeout(()=>s.remove(),600)}}
+function reset(){you=cpu=0;round=1;locked=false;$('you').textContent='0';$('cpu').textContent='0';$('round').textContent='1';$('playerHand').textContent='✊';$('cpuHand').textContent='✊';$('tag').textContent='MAKE YOUR MOVE';$('headline').textContent='Shoot!';$('modal').classList.remove('open')}
+function gameOver(){locked=true;$('modalTitle').textContent=you>cpu?'You win the match!':'CPU wins the match';$('modalText').textContent=`Final score: ${you}–${cpu}`;$('modal').classList.add('open')}
+document.querySelectorAll('.choice').forEach(b=>b.addEventListener('click',()=>play(b.dataset.choice)));$('reset').addEventListener('click',reset);$('playAgain').addEventListener('click',reset);
+</script></body></html>
