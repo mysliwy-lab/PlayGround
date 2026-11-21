@@ -68,7 +68,10 @@ function add(e){if(!drawing)return;const p=pToWorld(e);p.z=.05;points.push(p.clo
 }
 function end(e){if(!drawing)return;drawing=false;orb.visible=false;if(started&&points.length>100)finish()}
 function finish(){if(!drawing&&!started)return;drawing=false;orb.visible=false;
- let avg=coverage.reduce((a,b)=>a+b,0)/coverage.length;let cov=coverage.filter(v=>v>.5).length/coverage.length;let value=Math.round(Math.max(0,Math.min(99,avg*76+cov*24)));
+ let avg=coverage.reduce((a,b)=>a+b,0)/coverage.length;let cov=coverage.filter(v=>v>.5).length/coverage.length;
+ if(!Number.isFinite(avg))avg=0;if(!Number.isFinite(cov))cov=0;
+ let value=Math.round(Math.max(1,Math.min(99,(avg*76)+(cov*24))));
+ if(!Number.isFinite(value))value=1;
  let grade=value>92?(shapeNames[shapeIndex]+' MASTER'):value>78?'NEARLY PERFECT':value>60?'GOOD CONTROL':'KEEP PRACTICING';let detail=value>92?'Exceptional control. Every corner is exact.':value>78?'Excellent control. Just a few tiny wobbles.':value>60?'Solid attempt. Focus on an even pace.':'A slower, smoother line will help.';
  document.getElementById('grade').textContent=shapeNames[shapeIndex]+' COMPLETE';document.getElementById('scoreBig').textContent=value+'%';document.getElementById('detail').textContent=detail;document.getElementById('score').textContent=String(value).padStart(3,'0');document.getElementById('card').classList.add('open');started=false}
 canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);begin(e)});canvas.addEventListener('pointermove',add);canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
